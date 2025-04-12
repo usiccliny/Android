@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../App';
 import { useDatabase } from '../contexts/DatabaseContext';
 import ImageGallery from './ImageGallery';
 
-interface MarkerInfoProps {
-    route: RouteProp<RootStackParamList, 'MarkerInfo'>;
-    navigation: StackNavigationProp<RootStackParamList, 'MarkerInfo'>;
-}
+type MarkerInfoProps = StackScreenProps<RootStackParamList, 'MarkerInfo'>;
 
 const MarkerInfo: React.FC<MarkerInfoProps> = ({ route, navigation }) => {
     const { markerId } = route.params;

@@ -5,12 +5,10 @@ import { MarkerInfo } from '../types';
 import * as Location from 'expo-location';
 import { useDatabase } from '../contexts/DatabaseContext';
 import * as Notifications from 'expo-notifications';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../App'
 
-interface MapComponentProps {
-    navigation: StackNavigationProp<RootStackParamList, 'Map'>;
-}
+type MapComponentProps = StackScreenProps<RootStackParamList, 'Map'>
 
 const MapComponent: React.FC<MapComponentProps> = ({ navigation }) => {
     const { markers, addMarker } = useDatabase();

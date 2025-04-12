@@ -41,7 +41,7 @@ const App: React.FC = () => {
                 <Stack.Screen name="Map" component={MapComponent} />
                 <Stack.Screen name="MarkerInfo" component={MarkerInfo} />
             </Stack.Navigator>
-        </NavigationContainer>
+            </NavigationContainer>
         </DatabaseProvider>
     );
 };
