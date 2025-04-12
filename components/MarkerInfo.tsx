@@ -1,100 +1,97 @@
-// components/MarkerInfo.tsx
-
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Image, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { ImagePickerResult, MediaTypeOptions } from 'expo-image-picker'; // Импорт необходимых типов
+import { RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../App';
+import { useDatabase } from '../contexts/DatabaseContext';
+import ImageGallery from './ImageGallery';
 
 interface MarkerInfoProps {
-  marker: {
-    id: number;
-    coordinate: {
-      latitude: number;
-      longitude: number;
-    };
-  };
-  onClose: () => void; // Функция для закрытия окна
+    route: RouteProp<RootStackParamList, 'MarkerInfo'>;
+    navigation: StackNavigationProp<RootStackParamList, 'MarkerInfo'>;
 }
 
-const MarkerInfo: React.FC<MarkerInfoProps> = ({ marker, onClose }) => {
-  const [name, setName] = useState('');
-  const [image, setImage] = useState<string | null>(null);
+const MarkerInfo: React.FC<MarkerInfoProps> = ({ route, navigation }) => {
+    const { markerId } = route.params;
+    const { markerLongitude } = route.params;
+    const { markerLatitude } = route.params;
+    const [imageUris, setImageUris] = useState<{ id: number; uri: string }[]>([]);
+    const { removeMarker, addImage, fetchImages, removeImage } = useDatabase();
 
-  const selectImage = async () => {
-    // Запрашиваем разрешение на доступ к галерее
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    useEffect(() => {
+        const loadImages = async () => {
+            const result = await fetchImages(markerId);
+            setImageUris(result);
+        };
 
-    if (permissionResult.granted === false) {
-      alert('Permission to access camera roll is required!');
-      return;
-    }
+        loadImages();
+    }, [imageUris, fetchImages]);
 
-    // Открываем галерею для выбора изображения
-    const result: ImagePickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+    const selectImage = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permissionResult.granted === false) {
+            Alert.alert('Permission to access camera roll is required!');
+            return;
+        }
+    
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: 'images',
+            allowsEditing: false,
+            aspect: [4, 3],
+            quality: 1,
+          });
+    
+        if (!result.canceled && result.assets) {
+            await addImage(markerId, result.assets[0].uri);
+        }
+    };
 
-    if (!result.canceled && result.assets) {
-      // Проверка наличия assets и установка uri
-      setImage(result.assets[0].uri); // Устанавливаем выбранное изображение
-    }
-  };
+    const handleDelete = async () => {
+        try {
+            await removeMarker(markerId);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Marker Information</Text>
-      <Text>ID: {marker.id}</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter marker name"
-        value={name}
-        onChangeText={setName}
-      />
-      <Button title="Select Image" onPress={selectImage} />
-      {image && <Image source={{ uri: image }} style={styles.image} />}
-      <Button title="Close" onPress={onClose} />
-    </View>
-  );
+            navigation.goBack();
+        } catch (error) {
+            console.error('Error deleting marker:', error);
+            Alert.alert('Error', 'Failed to delete marker.');
+        }
+    };
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Marker Information</Text>
+            <Text>ID: {markerId}</Text>
+            <Text>Координаты: {markerLatitude} : {markerLongitude}</Text>
+            <Button title="Select Image" onPress={selectImage} />
+            <ImageGallery
+                images={imageUris}
+                onLongPress={removeImage}
+                markerId={markerId}
+            />
+            <View style={styles.buttonContainer}>
+                <Button title="Close" onPress={() => navigation.goBack()} />
+            </View>
+            <View style={styles.buttonContainer}>
+                <Button title="Delete" onPress={handleDelete} />
+            </View>
+        </View>
+    );
 };
-
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute', // Позиционируем абсолютно для перекрытия карты
-    top: 50,
-    left: 20,
-    right: 20,
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
+    container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: 'white',
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-    elevation: 2,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  image: {
-    width: 100,
-    height: 100,
-    marginTop: 10,
-  },
+    title: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    buttonContainer: {
+        marginTop: 10,
+    },
 });
 
 export default MarkerInfo;
